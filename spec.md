@@ -1,23 +1,23 @@
 # Bosing Royal Academy Yagrung
 
 ## Current State
-The site has a full backend with SiteInfo, news, events, staff, gallery, FAQs, achievements, and blob-storage. The admin panel manages all content but does not include logo management. The Layout component shows a hardcoded school logo/name.
+The site has 13 pages including Principal's Message. Navigation uses dropdown menus. The About dropdown has: About Us, Principal's Message, Staff & Faculty.
 
 ## Requested Changes (Diff)
 
 ### Add
-- Backend: `setLogoBlob` and `getLogoBlob` functions to store and retrieve the school logo as a blob via blob-storage
-- Admin panel: "Logo" section where admin can upload a new logo image; shows current logo preview
-- Layout/Navbar: Display the uploaded logo from backend if available, fallback to text
+- New page: From the Desk of Chairman at route /chairmans-desk
+- New page: Message from Managing Director at route /managing-directors-message
+- Both pages follow the same layout as PrincipalsMessage.tsx
 
 ### Modify
-- Layout.tsx: Fetch and display logo from backend blob storage
-- AdminPanel.tsx: Add Logo management tab/section
+- Layout.tsx: Add two new nav items to the About dropdown
+- App.tsx: Import and route the two new pages
 
 ### Remove
-- Nothing removed
+- Nothing
 
 ## Implementation Plan
-1. Add `logoBlob` state variable and `setLogoBlob`/`getLogoBlob` functions to backend
-2. Update AdminPanel to include logo upload using blob-storage upload flow
-3. Update Layout to fetch and display the logo blob URL
+1. Create ChairmansDeskPage.tsx and ManagingDirectorsMessage.tsx based on PrincipalsMessage.tsx with placeholder content
+2. Update App.tsx with new routes and imports
+3. Update Layout.tsx About nav group to include the two new pages

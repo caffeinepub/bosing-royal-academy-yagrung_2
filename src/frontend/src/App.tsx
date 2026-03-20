@@ -5,11 +5,13 @@ import Academics from "./pages/Academics";
 import Achievements from "./pages/Achievements";
 import AdminPanel from "./pages/AdminPanel";
 import Admissions from "./pages/Admissions";
+import ChairmansDeskPage from "./pages/ChairmansDeskPage";
 import Contact from "./pages/Contact";
 import Events from "./pages/Events";
 import FAQs from "./pages/FAQs";
 import Gallery from "./pages/Gallery";
 import Home from "./pages/Home";
+import ManagingDirectorsMessage from "./pages/ManagingDirectorsMessage";
 import News from "./pages/News";
 import NewsDetail from "./pages/NewsDetail";
 import PrincipalsMessage from "./pages/PrincipalsMessage";
@@ -20,6 +22,8 @@ export type Route =
   | "/"
   | "/about"
   | "/principals-message"
+  | "/chairmans-desk"
+  | "/managing-directors-message"
   | "/staff"
   | "/academics"
   | "/admissions"
@@ -56,6 +60,9 @@ export default function App() {
     if (route === "/" || route === "") return <Home />;
     if (route === "/about") return <About />;
     if (route === "/principals-message") return <PrincipalsMessage />;
+    if (route === "/chairmans-desk") return <ChairmansDeskPage />;
+    if (route === "/managing-directors-message")
+      return <ManagingDirectorsMessage />;
     if (route === "/staff") return <Staff />;
     if (route === "/academics") return <Academics />;
     if (route === "/admissions") return <Admissions />;

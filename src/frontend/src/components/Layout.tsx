@@ -10,6 +10,11 @@ const navGroups = [
     items: [
       { label: "About Us", href: "/about" },
       { label: "Principal's Message", href: "/principals-message" },
+      { label: "From the Desk of Chairman", href: "/chairmans-desk" },
+      {
+        label: "Message from Managing Director",
+        href: "/managing-directors-message",
+      },
       { label: "Staff & Faculty", href: "/staff" },
     ],
   },
