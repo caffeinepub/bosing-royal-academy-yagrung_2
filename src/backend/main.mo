@@ -5,13 +5,13 @@ import Time "mo:core/Time";
 import Order "mo:core/Order";
 import Nat "mo:core/Nat";
 import Principal "mo:core/Principal";
-import Migration "migration";
+
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
 
-(with migration = Migration.run)
+
 actor {
   include MixinStorage();
 
