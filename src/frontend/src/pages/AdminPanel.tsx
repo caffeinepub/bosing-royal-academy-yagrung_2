@@ -19,21 +19,51 @@ type Tab =
 export default function AdminPanel() {
   const { identity, login } = useInternetIdentity();
   const { actor } = useActor();
+  const qc = useQueryClient();
   const [tab, setTab] = useState<Tab>("siteInfo");
   const [isAdminChecked, setIsAdminChecked] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showInitForm, setShowInitForm] = useState(false);
+  const [initToken, setInitToken] = useState("");
+  const [initError, setInitError] = useState("");
+  const [initPending, setInitPending] = useState(false);
 
   useQuery({
     queryKey: ["isAdmin"],
     queryFn: async () => {
       if (!actor) return false;
-      const result = await actor.isCallerAdmin();
-      setIsAdmin(result);
-      setIsAdminChecked(true);
-      return result;
+      try {
+        const result = await actor.isCallerAdmin();
+        setIsAdmin(result);
+        setIsAdminChecked(true);
+        return result;
+      } catch {
+        setIsAdmin(false);
+        setIsAdminChecked(true);
+        return false;
+      }
     },
     enabled: !!actor && !!identity,
   });
+
+  const handleInitSubmit = async () => {
+    if (!actor || !initToken.trim()) return;
+    setInitPending(true);
+    setInitError("");
+    try {
+      await actor._initializeAccessControlWithSecret(initToken.trim());
+      qc.invalidateQueries({ queryKey: ["isAdmin"] });
+      setShowInitForm(false);
+      setInitToken("");
+    } catch (e: any) {
+      setInitError(
+        e?.message ||
+          "Invalid token or initialization failed. Please try again.",
+      );
+    } finally {
+      setInitPending(false);
+    }
+  };
 
   if (!identity) {
     return (
@@ -47,6 +77,7 @@ export default function AdminPanel() {
         <button
           type="button"
           onClick={login}
+          data-ocid="admin.primary_button"
           className="px-6 py-3 bg-amber-600 text-white font-semibold rounded hover:bg-amber-700 transition-colors"
         >
           Login with Internet Identity
@@ -63,6 +94,71 @@ export default function AdminPanel() {
   }
 
   if (isAdminChecked && !isAdmin) {
+    if (showInitForm) {
+      return (
+        <div className="min-h-96 flex flex-col items-center justify-center p-8">
+          <div className="bg-white rounded-xl shadow-md border border-amber-100 p-8 w-full max-w-md">
+            <h2 className="font-serif text-2xl font-bold text-gray-900 mb-2">
+              Initialize Admin Account
+            </h2>
+            <p className="text-sm text-gray-600 mb-6">
+              If you are the first administrator, enter the admin secret token
+              provided during setup to claim admin access.
+            </p>
+            <div className="mb-4">
+              <label
+                htmlFor="admin-secret-token"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Admin Secret Token
+              </label>
+              <input
+                id="admin-secret-token"
+                data-ocid="admin.input"
+                type="password"
+                value={initToken}
+                onChange={(e) => setInitToken(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleInitSubmit()}
+                placeholder="Enter secret token"
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+              />
+            </div>
+            {initError && (
+              <p
+                data-ocid="admin.error_state"
+                className="text-sm text-red-600 mb-4"
+              >
+                {initError}
+              </p>
+            )}
+            <div className="flex gap-3">
+              <button
+                type="button"
+                data-ocid="admin.submit_button"
+                onClick={handleInitSubmit}
+                disabled={initPending || !initToken.trim()}
+                className="px-6 py-3 bg-amber-600 text-white font-semibold rounded hover:bg-amber-700 transition-colors disabled:opacity-50"
+              >
+                {initPending ? "Submitting..." : "Submit"}
+              </button>
+              <button
+                type="button"
+                data-ocid="admin.cancel_button"
+                onClick={() => {
+                  setShowInitForm(false);
+                  setInitToken("");
+                  setInitError("");
+                }}
+                className="px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-96 flex flex-col items-center justify-center p-16">
         <h2 className="font-serif text-2xl font-bold text-gray-900 mb-4">
@@ -73,6 +169,14 @@ export default function AdminPanel() {
           If you are the school administrator, please contact support to set up
           your admin account.
         </p>
+        <button
+          type="button"
+          data-ocid="admin.primary_button"
+          onClick={() => setShowInitForm(true)}
+          className="px-6 py-3 bg-amber-600 text-white font-semibold rounded hover:bg-amber-700 transition-colors mb-4"
+        >
+          Claim Admin Access
+        </button>
         <button
           type="button"
           onClick={() => navigate("/")}
@@ -134,7 +238,11 @@ export default function AdminPanel() {
         </div>
 
         {/* Tab content */}
-        {actor && (
+        {!actor ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="text-gray-500">Loading...</div>
+          </div>
+        ) : (
           <>
             {tab === "siteInfo" && <SiteInfoTab actor={actor} />}
             {tab === "news" && <NewsTab actor={actor} />}
@@ -1414,6 +1522,7 @@ function Field({
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function LogoTab({ actor }: { actor: any }) {
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
