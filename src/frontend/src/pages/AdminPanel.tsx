@@ -14,7 +14,8 @@ type Tab =
   | "faqs"
   | "achievements"
   | "admissions"
-  | "logo";
+  | "logo"
+  | "security";
 
 export default function AdminPanel() {
   const { identity, login } = useInternetIdentity();
@@ -27,6 +28,10 @@ export default function AdminPanel() {
   const [initToken, setInitToken] = useState("");
   const [initError, setInitError] = useState("");
   const [initPending, setInitPending] = useState(false);
+  const [showPinLogin, setShowPinLogin] = useState(false);
+  const [pinInput, setPinInput] = useState("");
+  const [pinError, setPinError] = useState("");
+  const hasSavedPin = !!localStorage.getItem("adminQuickPin");
 
   useQuery({
     queryKey: ["isAdmin"],
@@ -65,30 +70,122 @@ export default function AdminPanel() {
     }
   };
 
+  const handlePinUnlock = () => {
+    const stored = localStorage.getItem("adminQuickPin");
+    if (!stored || btoa(pinInput) !== stored) {
+      setPinError("Incorrect PIN. Please try again.");
+      return;
+    }
+    setPinError("");
+    login();
+  };
+
   if (!identity) {
     return (
-      <div className="min-h-96 flex flex-col items-center justify-center p-16">
-        <h2 className="font-serif text-2xl font-bold text-gray-900 mb-4">
-          Admin Access Required
-        </h2>
-        <p className="text-gray-600 mb-6">
-          Please log in with Internet Identity to access the admin panel.
-        </p>
-        <button
-          type="button"
-          onClick={login}
-          data-ocid="admin.primary_button"
-          className="px-6 py-3 bg-amber-600 text-white font-semibold rounded hover:bg-amber-700 transition-colors"
-        >
-          Login with Internet Identity
-        </button>
-        <button
-          type="button"
-          onClick={() => navigate("/")}
-          className="mt-4 text-sm text-gray-500 hover:text-gray-700"
-        >
-          ← Go to Website
-        </button>
+      <div className="min-h-96 flex flex-col items-center justify-center p-8">
+        <div className="bg-white rounded-xl shadow-md border border-amber-100 p-8 w-full max-w-md">
+          <h2 className="font-serif text-2xl font-bold text-gray-900 mb-2 text-center">
+            Admin Access
+          </h2>
+          <p className="text-gray-500 text-sm text-center mb-6">
+            Bosing Royal Academy Yagrung
+          </p>
+
+          {!showPinLogin ? (
+            <>
+              <button
+                type="button"
+                onClick={login}
+                data-ocid="admin.primary_button"
+                className="w-full px-6 py-3 bg-amber-600 text-white font-semibold rounded hover:bg-amber-700 transition-colors mb-4"
+              >
+                🔐 Login with Internet Identity
+              </button>
+              <div className="relative flex items-center my-4">
+                <div className="flex-grow border-t border-gray-200" />
+                <span className="mx-3 text-xs text-gray-400 uppercase tracking-widest">
+                  or
+                </span>
+                <div className="flex-grow border-t border-gray-200" />
+              </div>
+              {hasSavedPin ? (
+                <button
+                  type="button"
+                  data-ocid="admin.secondary_button"
+                  onClick={() => {
+                    setShowPinLogin(true);
+                    setPinError("");
+                  }}
+                  className="w-full px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded hover:bg-gray-200 transition-colors"
+                >
+                  🔢 Quick Access with PIN
+                </button>
+              ) : (
+                <div className="text-center text-sm text-gray-400 py-2 px-4 bg-gray-50 rounded border border-gray-200">
+                  No PIN set yet. Log in with Internet Identity first, then set
+                  a PIN from the Security tab in the admin panel.
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-gray-600 mb-4 text-center">
+                Enter your Quick Access PIN
+              </p>
+              <input
+                type="password"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={6}
+                data-ocid="admin.input"
+                value={pinInput}
+                onChange={(e) => {
+                  setPinInput(e.target.value.replace(/\D/g, ""));
+                  setPinError("");
+                }}
+                onKeyDown={(e) => e.key === "Enter" && handlePinUnlock()}
+                placeholder="Enter 4-6 digit PIN"
+                className="w-full border border-gray-300 rounded px-3 py-3 text-center text-2xl tracking-widest mb-3 focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+              />
+              {pinError && (
+                <p
+                  data-ocid="admin.error_state"
+                  className="text-sm text-red-600 mb-3 text-center"
+                >
+                  {pinError}
+                </p>
+              )}
+              <button
+                type="button"
+                data-ocid="admin.primary_button"
+                onClick={handlePinUnlock}
+                disabled={pinInput.length < 4}
+                className="w-full px-6 py-3 bg-amber-600 text-white font-semibold rounded hover:bg-amber-700 transition-colors disabled:opacity-50 mb-3"
+              >
+                Unlock with PIN
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPinLogin(false);
+                  setPinInput("");
+                  setPinError("");
+                }}
+                className="w-full text-sm text-gray-500 hover:text-gray-700 py-2"
+              >
+                Use Internet Identity instead
+              </button>
+            </>
+          )}
+
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            className="mt-4 w-full text-sm text-gray-400 hover:text-gray-600"
+          >
+            ← Go to Website
+          </button>
+        </div>
       </div>
     );
   }
@@ -198,6 +295,7 @@ export default function AdminPanel() {
     { key: "achievements", label: "Achievements" },
     { key: "admissions", label: "Admissions" },
     { key: "logo", label: "🖼 Logo" },
+    { key: "security", label: "🔒 Security" },
   ];
 
   return (
@@ -253,6 +351,7 @@ export default function AdminPanel() {
             {tab === "achievements" && <AchievementsTab actor={actor} />}
             {tab === "admissions" && <AdmissionsTab actor={actor} />}
             {tab === "logo" && <LogoTab actor={actor} />}
+            {tab === "security" && <SecurityTab />}
           </>
         )}
       </div>
@@ -1644,6 +1743,149 @@ function LogoTab({ actor }: { actor: any }) {
             </span>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function SecurityTab() {
+  const [pin, setPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
+  const [pinError, setPinError] = useState("");
+  const [pinSuccess, setPinSuccess] = useState("");
+  const [hasSavedPin, setHasSavedPin] = useState(
+    !!localStorage.getItem("adminQuickPin"),
+  );
+
+  const handleSetPin = () => {
+    if (!/^\d{4,6}$/.test(pin)) {
+      setPinError("PIN must be 4-6 digits only.");
+      return;
+    }
+    if (pin !== confirmPin) {
+      setPinError("PINs do not match.");
+      return;
+    }
+    localStorage.setItem("adminQuickPin", btoa(pin));
+    setHasSavedPin(true);
+    setPin("");
+    setConfirmPin("");
+    setPinError("");
+    setPinSuccess("PIN set successfully! You can now use it for quick access.");
+    setTimeout(() => setPinSuccess(""), 4000);
+  };
+
+  const handleRemovePin = () => {
+    localStorage.removeItem("adminQuickPin");
+    setHasSavedPin(false);
+    setPinSuccess("PIN removed.");
+    setTimeout(() => setPinSuccess(""), 3000);
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow-sm p-6 max-w-lg">
+      <h2 className="font-serif text-xl font-bold mb-2">Security</h2>
+      <p className="text-sm text-gray-500 mb-6">
+        Manage alternative access methods for the admin panel.
+      </p>
+
+      <div className="border border-gray-200 rounded-lg p-5">
+        <h3 className="font-semibold text-gray-800 mb-1">Quick Access PIN</h3>
+        <p className="text-sm text-gray-500 mb-5">
+          Set a PIN to quickly access the admin panel without going through
+          Internet Identity each time. The PIN is stored securely in your
+          browser.
+        </p>
+
+        {hasSavedPin && (
+          <div className="flex items-center gap-3 mb-5 p-3 bg-green-50 border border-green-200 rounded">
+            <span className="text-green-600 text-lg">✓</span>
+            <span className="text-sm font-medium text-green-700">
+              PIN is set
+            </span>
+            <button
+              type="button"
+              data-ocid="security.delete_button"
+              onClick={handleRemovePin}
+              className="ml-auto px-3 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors font-medium"
+            >
+              Remove PIN
+            </button>
+          </div>
+        )}
+
+        <div className="space-y-3">
+          <div>
+            <label
+              htmlFor="sec-pin"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              {hasSavedPin ? "Change PIN" : "New PIN"} (4-6 digits)
+            </label>
+            <input
+              id="sec-pin"
+              data-ocid="security.input"
+              type="password"
+              inputMode="numeric"
+              maxLength={6}
+              value={pin}
+              onChange={(e) => {
+                setPin(e.target.value.replace(/\D/g, ""));
+                setPinError("");
+              }}
+              placeholder="Enter 4-6 digit PIN"
+              className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="sec-confirm-pin"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Confirm PIN
+            </label>
+            <input
+              id="sec-confirm-pin"
+              type="password"
+              inputMode="numeric"
+              maxLength={6}
+              value={confirmPin}
+              onChange={(e) => {
+                setConfirmPin(e.target.value.replace(/\D/g, ""));
+                setPinError("");
+              }}
+              placeholder="Repeat PIN"
+              className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+            />
+          </div>
+        </div>
+
+        {pinError && (
+          <p
+            data-ocid="security.error_state"
+            className="text-sm text-red-600 mt-3"
+          >
+            {pinError}
+          </p>
+        )}
+        {pinSuccess && (
+          <p
+            data-ocid="security.success_state"
+            className="text-sm text-green-600 mt-3"
+          >
+            {pinSuccess}
+          </p>
+        )}
+
+        <button
+          type="button"
+          data-ocid="security.submit_button"
+          onClick={handleSetPin}
+          disabled={pin.length < 4 || confirmPin.length < 4}
+          className="mt-4 px-5 py-2 bg-amber-600 text-white text-sm font-semibold rounded hover:bg-amber-700 transition-colors disabled:opacity-50"
+        >
+          Set PIN
+        </button>
       </div>
     </div>
   );

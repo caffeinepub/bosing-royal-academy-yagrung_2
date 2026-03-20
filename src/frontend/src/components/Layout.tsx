@@ -75,10 +75,11 @@ export default function Layout({
           <div className="flex gap-3 items-center">
             <button
               type="button"
-              onClick={() => handleNav(isLoggedIn ? "/admin" : "/")}
+              onClick={() => handleNav("/admin")}
               className="hover:text-yellow-300 transition-colors"
+              data-ocid="nav.admin_login.link"
             >
-              {isLoggedIn ? "ADMIN PANEL" : "STAFF LOGIN"}
+              ADMIN LOGIN
             </button>
             {isLoggedIn ? (
               <button
@@ -268,12 +269,18 @@ export default function Layout({
                 ["News", "/news"],
                 ["Events", "/events"],
                 ["Contact", "/contact"],
+                ["Admin Login", "/admin"],
               ].map(([l, h]) => (
                 <li key={h}>
                   <button
                     type="button"
                     onClick={() => handleNav(h)}
                     className="hover:text-gold transition-colors"
+                    data-ocid={
+                      l === "Admin Login"
+                        ? "footer.admin_login.link"
+                        : undefined
+                    }
                   >
                     {l}
                   </button>

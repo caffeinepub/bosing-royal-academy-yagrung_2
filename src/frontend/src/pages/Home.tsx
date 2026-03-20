@@ -1,6 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, Calendar, ChevronRight, Image, Users } from "lucide-react";
+import {
+  BookOpen,
+  ChevronRight,
+  ExternalLink,
+  Image,
+  Users,
+} from "lucide-react";
+import { motion } from "motion/react";
 import { navigate } from "../App";
+import ShareLinkCard from "../components/ShareLinkCard";
 import { useActor } from "../hooks/useActor";
 
 function formatDate(ts: bigint | number) {
@@ -46,6 +54,7 @@ export default function Home() {
 
   const schoolName = siteInfo?.schoolName || "Bosing Royal Academy Yagrung";
   const tagline = siteInfo?.tagline || "Excellence in Education";
+  const siteUrl = window.location.origin;
 
   return (
     <div>
@@ -86,6 +95,64 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Promotional Banner Card */}
+      <section className="py-10 px-4 bg-white">
+        <motion.div
+          initial={{ opacity: 0, y: 32 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="max-w-4xl mx-auto"
+        >
+          <div className="relative rounded-2xl overflow-hidden shadow-2xl group">
+            {/* Banner image */}
+            <img
+              src="/assets/generated/school-banner.dim_1200x500.jpg"
+              alt="Bosing Royal Academy Yagrung"
+              className="w-full h-64 md:h-80 object-cover transition-transform duration-700 group-hover:scale-105"
+              onError={(e) => {
+                const target = e.currentTarget as HTMLImageElement;
+                target.style.display = "none";
+                const parent = target.parentElement;
+                if (parent) {
+                  parent.style.background =
+                    "linear-gradient(135deg, oklch(0.18 0.08 240), oklch(0.28 0.1 250))";
+                  parent.style.minHeight = "320px";
+                }
+              }}
+            />
+            {/* Dark gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent" />
+            {/* Content overlay */}
+            <div className="absolute inset-0 flex flex-col items-center justify-end pb-8 px-6 text-center">
+              <p className="text-amber-300 text-xs tracking-[0.3em] uppercase mb-2 font-semibold">
+                Official Website
+              </p>
+              <h2 className="font-serif text-white text-2xl md:text-4xl font-bold uppercase tracking-wide mb-6 drop-shadow-lg">
+                {schoolName}
+              </h2>
+              <motion.button
+                type="button"
+                data-ocid="promo.primary_button"
+                whileHover={{ scale: 1.06 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate("/");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="inline-flex items-center gap-2 px-8 py-3 bg-amber-500 hover:bg-amber-400 text-white font-bold uppercase tracking-widest rounded-full shadow-lg transition-colors text-sm"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Visit Our Website
+              </motion.button>
+            </div>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* Share Link as Image */}
+      <ShareLinkCard schoolName={schoolName} siteUrl={siteUrl} />
 
       {/* Stats bar */}
       <div className="bg-amber-600 text-white">
