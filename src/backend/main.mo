@@ -1,15 +1,17 @@
 import Map "mo:core/Map";
-import List "mo:core/List";
 import Array "mo:core/Array";
+import Runtime "mo:core/Runtime";
 import Time "mo:core/Time";
 import Order "mo:core/Order";
-import Runtime "mo:core/Runtime";
+import Nat "mo:core/Nat";
 import Principal "mo:core/Principal";
+import Migration "migration";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
 
+(with migration = Migration.run)
 actor {
   include MixinStorage();
 
@@ -151,6 +153,7 @@ actor {
 
   var siteInfo : ?SiteInfo = null;
   var admissionInfo : ?AdmissionInfo = null;
+  var logoBlob : ?Storage.ExternalBlob = null;
 
   let news = Map.empty<Nat, Content>();
   let events = Map.empty<Nat, Event>();
@@ -181,6 +184,18 @@ actor {
       Runtime.trap("Unauthorized: Only users can save profiles");
     };
     userProfiles.add(caller, profile);
+  };
+
+  /*********** Logo Management **************/
+  public shared ({ caller }) func setLogoBlob(blob : Storage.ExternalBlob) : async () {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Must be admin");
+    };
+    logoBlob := ?blob;
+  };
+
+  public query ({ caller }) func getLogoBlob() : async ?Storage.ExternalBlob {
+    logoBlob;
   };
 
   /*********** Site Info **************/
@@ -256,11 +271,11 @@ actor {
     if (not AccessControl.isAdmin(accessControlState, caller)) {
       Runtime.trap("Unauthorized: Must be admin");
     };
-    news.values().toArray().sort();
+    news.values().toArray();
   };
 
   public query ({ caller }) func getPublishedNews() : async [Content] {
-    news.values().toArray().filter(func(item) { item.published }).sort();
+    news.values().toArray().filter(func(item) { item.published });
   };
 
   public query ({ caller }) func getNews(id : Nat) : async Content {
@@ -324,11 +339,11 @@ actor {
     if (not AccessControl.isAdmin(accessControlState, caller)) {
       Runtime.trap("Unauthorized: Must be admin");
     };
-    events.values().toArray().sort();
+    events.values().toArray();
   };
 
   public query ({ caller }) func getPublishedEvents() : async [Event] {
-    events.values().toArray().filter(func(item) { item.published }).sort();
+    events.values().toArray().filter(func(item) { item.published });
   };
 
   public query ({ caller }) func getEvent(id : Nat) : async Event {
@@ -391,7 +406,7 @@ actor {
   };
 
   public query ({ caller }) func getAllStaff() : async [Staff] {
-    staff.values().toArray().sort();
+    staff.values().toArray();
   };
 
   /*********** Gallery **************/
@@ -438,7 +453,7 @@ actor {
   };
 
   public query ({ caller }) func getAllGalleryImages() : async [GalleryImage] {
-    gallery.values().toArray().sort();
+    gallery.values().toArray();
   };
 
   public shared ({ caller }) func addGalleryItem(title : Text, category : Text, blob : Storage.ExternalBlob) : async GalleryItem {
@@ -458,7 +473,7 @@ actor {
   };
 
   public query ({ caller }) func getAllGalleryItems() : async [GalleryItem] {
-    galleryItems.values().toArray().sort();
+    galleryItems.values().toArray();
   };
 
   /*********** FAQs **************/
@@ -508,11 +523,11 @@ actor {
     if (not AccessControl.isAdmin(accessControlState, caller)) {
       Runtime.trap("Unauthorized: Must be admin");
     };
-    faqs.values().toArray().sort();
+    faqs.values().toArray();
   };
 
   public query ({ caller }) func getPublishedFAQs() : async [FAQ] {
-    faqs.values().toArray().filter(func(item) { item.published }).sort();
+    faqs.values().toArray().filter(func(item) { item.published });
   };
 
   /*********** Achievements **************/
@@ -559,6 +574,6 @@ actor {
   };
 
   public query ({ caller }) func getAllAchievements() : async [Achievement] {
-    achievements.values().toArray().sort();
+    achievements.values().toArray();
   };
 };

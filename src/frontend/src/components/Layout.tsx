@@ -1,6 +1,7 @@
 import { ChevronDown, Menu, X } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { navigate } from "../App";
+import { useActor } from "../hooks/useActor";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 
 const navGroups = [
@@ -43,9 +44,18 @@ export default function Layout({
   currentRoute,
 }: { children: ReactNode; currentRoute: string }) {
   const { identity, login, clear } = useInternetIdentity();
+  const { actor } = useActor();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const isLoggedIn = !!identity;
+
+  useEffect(() => {
+    if (!actor) return;
+    actor.getLogoBlob().then((blob: any) => {
+      if (blob) setLogoUrl(blob.getDirectURL());
+    });
+  }, [actor]);
 
   const handleNav = (href: string) => {
     navigate(href);
@@ -100,9 +110,17 @@ export default function Layout({
             onClick={() => handleNav("/")}
             className="flex items-center gap-3 text-left"
           >
-            <div className="w-12 h-12 bg-navy rounded-full flex items-center justify-center text-white font-bold text-lg">
-              BRA
-            </div>
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt="Bosing Royal Academy Yagrung"
+                className="h-12 w-auto object-contain"
+              />
+            ) : (
+              <div className="w-12 h-12 bg-navy rounded-full flex items-center justify-center text-white font-bold text-lg">
+                BRA
+              </div>
+            )}
             <div>
               <div className="font-serif text-lg font-bold text-gray-900 leading-tight">
                 Bosing Royal Academy

@@ -13,7 +13,8 @@ type Tab =
   | "gallery"
   | "faqs"
   | "achievements"
-  | "admissions";
+  | "admissions"
+  | "logo";
 
 export default function AdminPanel() {
   const { identity, login } = useInternetIdentity();
@@ -92,6 +93,7 @@ export default function AdminPanel() {
     { key: "faqs", label: "FAQs" },
     { key: "achievements", label: "Achievements" },
     { key: "admissions", label: "Admissions" },
+    { key: "logo", label: "🖼 Logo" },
   ];
 
   return (
@@ -142,6 +144,7 @@ export default function AdminPanel() {
             {tab === "faqs" && <FAQsTab actor={actor} />}
             {tab === "achievements" && <AchievementsTab actor={actor} />}
             {tab === "admissions" && <AdmissionsTab actor={actor} />}
+            {tab === "logo" && <LogoTab actor={actor} />}
           </>
         )}
       </div>
@@ -1407,6 +1410,132 @@ function Field({
           className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent"
         />
       )}
+    </div>
+  );
+}
+
+function LogoTab({ actor }: { actor: any }) {
+  const qc = useQueryClient();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState<
+    "idle" | "success" | "error"
+  >("idle");
+
+  const { data: logoBlob } = useQuery({
+    queryKey: ["siteLogo"],
+    queryFn: () => actor.getLogoBlob(),
+  });
+
+  const handleUpload = async () => {
+    const file = fileRef.current?.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setProgress(0);
+    setUploadStatus("idle");
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const blob = ExternalBlob.fromBytes(bytes).withUploadProgress((p) =>
+        setProgress(p),
+      );
+      await actor.setLogoBlob(blob);
+      qc.invalidateQueries({ queryKey: ["siteLogo"] });
+      if (fileRef.current) fileRef.current.value = "";
+      setUploadStatus("success");
+    } catch {
+      setUploadStatus("error");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const logoUrl = logoBlob ? logoBlob.getDirectURL() : null;
+
+  return (
+    <div className="bg-white rounded-lg shadow-sm p-6 max-w-xl">
+      <h2 className="font-serif text-xl font-bold mb-2">School Logo</h2>
+      <p className="text-sm text-gray-500 mb-6">
+        Upload your school logo here. It will appear in the website header and
+        footer.
+      </p>
+
+      {/* Current logo preview */}
+      <div className="mb-6">
+        <h3 className="text-sm font-semibold text-gray-700 mb-3">
+          Current Logo
+        </h3>
+        <div
+          data-ocid="logo.panel"
+          className="w-full h-40 border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center bg-gray-50"
+        >
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt="School logo"
+              className="max-h-36 max-w-full object-contain"
+            />
+          ) : (
+            <div className="text-center text-gray-400">
+              <div className="text-4xl mb-2">🏫</div>
+              <p className="text-sm">No logo uploaded yet</p>
+              <p className="text-xs">
+                The text initials "BRA" are shown instead
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Upload new logo */}
+      <div className="p-4 border border-amber-200 rounded-lg bg-amber-50">
+        <h3 className="font-semibold mb-4">Upload New Logo</h3>
+        <div className="space-y-3">
+          <div>
+            <label
+              htmlFor="logo-file"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Select Image File (PNG or SVG recommended for best quality)
+            </label>
+            <input
+              data-ocid="logo.upload_button"
+              id="logo-file"
+              type="file"
+              accept="image/*"
+              ref={fileRef}
+              className="text-sm"
+            />
+          </div>
+        </div>
+        <div className="mt-4 flex items-center gap-4">
+          <button
+            data-ocid="logo.primary_button"
+            type="button"
+            onClick={handleUpload}
+            disabled={uploading}
+            className="px-4 py-2 bg-amber-600 text-white text-sm font-semibold rounded disabled:opacity-50"
+          >
+            {uploading ? `Uploading ${progress}%` : "Upload Logo"}
+          </button>
+          {uploadStatus === "success" && (
+            <span
+              data-ocid="logo.success_state"
+              className="text-sm text-green-600 font-medium"
+            >
+              ✓ Logo updated successfully!
+            </span>
+          )}
+          {uploadStatus === "error" && (
+            <span
+              data-ocid="logo.error_state"
+              className="text-sm text-red-600 font-medium"
+            >
+              ✗ Upload failed. Please try again.
+            </span>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

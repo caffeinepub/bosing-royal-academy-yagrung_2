@@ -94,6 +94,9 @@ export enum UserRole {
 }
 export interface backendInterface {
     addGalleryItem(title: string, category: string, blob: ExternalBlob): Promise<GalleryItem>;
+    /**
+     * / ********* Types *************
+     */
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     /**
      * / ********* Achievements *************
@@ -139,6 +142,7 @@ export interface backendInterface {
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getEvent(id: bigint): Promise<Event>;
+    getLogoBlob(): Promise<ExternalBlob | null>;
     getNews(id: bigint): Promise<Content>;
     getPublishedEvents(): Promise<Array<Event>>;
     getPublishedFAQs(): Promise<Array<FAQ>>;
@@ -151,6 +155,10 @@ export interface backendInterface {
      * / ********* Admissions *************
      */
     setAdmissionInfo(info: AdmissionInfo): Promise<void>;
+    /**
+     * / ********* Logo Management *************
+     */
+    setLogoBlob(blob: ExternalBlob): Promise<void>;
     /**
      * / ********* Site Info *************
      */

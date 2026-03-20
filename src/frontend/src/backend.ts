@@ -187,6 +187,9 @@ export interface backendInterface {
     _caffeineStorageUpdateGatewayPrincipals(): Promise<void>;
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
     addGalleryItem(title: string, category: string, blob: ExternalBlob): Promise<GalleryItem>;
+    /**
+     * / ********* Types *************
+     */
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     /**
      * / ********* Achievements *************
@@ -232,6 +235,7 @@ export interface backendInterface {
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getEvent(id: bigint): Promise<Event>;
+    getLogoBlob(): Promise<ExternalBlob | null>;
     getNews(id: bigint): Promise<Content>;
     getPublishedEvents(): Promise<Array<Event>>;
     getPublishedFAQs(): Promise<Array<FAQ>>;
@@ -244,6 +248,10 @@ export interface backendInterface {
      * / ********* Admissions *************
      */
     setAdmissionInfo(info: AdmissionInfo): Promise<void>;
+    /**
+     * / ********* Logo Management *************
+     */
+    setLogoBlob(blob: ExternalBlob): Promise<void>;
     /**
      * / ********* Site Info *************
      */
@@ -706,6 +714,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async getLogoBlob(): Promise<ExternalBlob | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getLogoBlob();
+                return from_candid_opt_n25(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getLogoBlob();
+            return from_candid_opt_n25(this._uploadFile, this._downloadFile, result);
+        }
+    }
     async getNews(arg0: bigint): Promise<Content> {
         if (this.processError) {
             try {
@@ -766,14 +788,14 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getSiteInfo();
-                return from_candid_opt_n25(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n26(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getSiteInfo();
-            return from_candid_opt_n25(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n26(this._uploadFile, this._downloadFile, result);
         }
     }
     async getUserProfile(arg0: Principal): Promise<UserProfile | null> {
@@ -829,6 +851,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.setAdmissionInfo(arg0);
+            return result;
+        }
+    }
+    async setLogoBlob(arg0: ExternalBlob): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.setLogoBlob(await to_candid_ExternalBlob_n8(this._uploadFile, this._downloadFile, arg0));
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.setLogoBlob(await to_candid_ExternalBlob_n8(this._uploadFile, this._downloadFile, arg0));
             return result;
         }
     }
@@ -955,7 +991,10 @@ function from_candid_opt_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint8A
 function from_candid_opt_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n25(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_SiteInfo]): SiteInfo | null {
+async function from_candid_opt_n25(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_ExternalBlob]): Promise<ExternalBlob | null> {
+    return value.length === 0 ? null : await from_candid_ExternalBlob_n11(_uploadFile, _downloadFile, value[0]);
+}
+function from_candid_opt_n26(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_SiteInfo]): SiteInfo | null {
     return value.length === 0 ? null : value[0];
 }
 function from_candid_opt_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [boolean]): boolean | null {

@@ -114,6 +114,9 @@ export interface _SERVICE {
   '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'addGalleryItem' : ActorMethod<[string, string, ExternalBlob], GalleryItem>,
+  /**
+   * / ********* Types *************
+   */
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   /**
    * / ********* Achievements *************
@@ -159,6 +162,7 @@ export interface _SERVICE {
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getEvent' : ActorMethod<[bigint], Event>,
+  'getLogoBlob' : ActorMethod<[], [] | [ExternalBlob]>,
   'getNews' : ActorMethod<[bigint], Content>,
   'getPublishedEvents' : ActorMethod<[], Array<Event>>,
   'getPublishedFAQs' : ActorMethod<[], Array<FAQ>>,
@@ -171,6 +175,10 @@ export interface _SERVICE {
    * / ********* Admissions *************
    */
   'setAdmissionInfo' : ActorMethod<[AdmissionInfo], undefined>,
+  /**
+   * / ********* Logo Management *************
+   */
+  'setLogoBlob' : ActorMethod<[ExternalBlob], undefined>,
   /**
    * / ********* Site Info *************
    */
