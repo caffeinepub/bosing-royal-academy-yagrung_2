@@ -149,7 +149,9 @@ export interface backendInterface {
     getPublishedNews(): Promise<Array<Content>>;
     getSiteInfo(): Promise<SiteInfo | null>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
+    getMenuConfig(): Promise<string | null>;
     isCallerAdmin(): Promise<boolean>;
+    setMenuConfig(json: string): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     /**
      * / ********* Admissions *************

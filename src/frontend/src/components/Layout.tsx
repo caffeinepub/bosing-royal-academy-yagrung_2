@@ -4,7 +4,7 @@ import { navigate } from "../App";
 import { useActor } from "../hooks/useActor";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 
-const navGroups = [
+const DEFAULT_NAV_GROUPS = [
   {
     label: "About",
     items: [
@@ -53,13 +53,27 @@ export default function Layout({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [navGroups, setNavGroups] = useState(DEFAULT_NAV_GROUPS);
   const isLoggedIn = !!identity;
 
   useEffect(() => {
     if (!actor) return;
     actor.getLogoBlob().then((blob: any) => {
-      if (blob) setLogoUrl(blob.getDirectURL());
+      if (blob) setLogoUrl(blob?.getDirectURL?.() ?? null);
     });
+    (actor as any)
+      .getMenuConfig()
+      .then((result: string | null) => {
+        if (result) {
+          try {
+            const parsed = JSON.parse(result);
+            setNavGroups(parsed);
+          } catch {
+            setNavGroups(DEFAULT_NAV_GROUPS);
+          }
+        }
+      })
+      .catch(() => {});
   }, [actor]);
 
   const handleNav = (href: string) => {

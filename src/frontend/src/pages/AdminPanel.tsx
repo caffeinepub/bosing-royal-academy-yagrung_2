@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { navigate } from "../App";
 import { ExternalBlob } from "../backend";
 import { useActor } from "../hooks/useActor";
@@ -15,7 +15,51 @@ type Tab =
   | "achievements"
   | "admissions"
   | "logo"
-  | "security";
+  | "security"
+  | "menus";
+
+type NavItem = { label: string; href: string };
+type NavGroup = { label: string; items: NavItem[] };
+
+const DEFAULT_NAV_GROUPS: NavGroup[] = [
+  {
+    label: "About",
+    items: [
+      { label: "About Us", href: "/about" },
+      { label: "Principal's Message", href: "/principals-message" },
+      { label: "From the Desk of Chairman", href: "/chairmans-desk" },
+      {
+        label: "Message from Managing Director",
+        href: "/managing-directors-message",
+      },
+      { label: "Staff & Faculty", href: "/staff" },
+    ],
+  },
+  {
+    label: "Academics",
+    items: [
+      { label: "Academics", href: "/academics" },
+      { label: "Admissions", href: "/admissions" },
+      { label: "Student Life", href: "/student-life" },
+    ],
+  },
+  {
+    label: "News & Events",
+    items: [
+      { label: "News & Announcements", href: "/news" },
+      { label: "Events", href: "/events" },
+      { label: "Achievements", href: "/achievements" },
+    ],
+  },
+  {
+    label: "More",
+    items: [
+      { label: "Gallery", href: "/gallery" },
+      { label: "FAQs", href: "/faqs" },
+      { label: "Contact Us", href: "/contact" },
+    ],
+  },
+];
 
 export default function AdminPanel() {
   const { identity, login } = useInternetIdentity();
@@ -296,6 +340,7 @@ export default function AdminPanel() {
     { key: "admissions", label: "Admissions" },
     { key: "logo", label: "🖼 Logo" },
     { key: "security", label: "🔒 Security" },
+    { key: "menus", label: "📋 Menus" },
   ];
 
   return (
@@ -352,6 +397,7 @@ export default function AdminPanel() {
             {tab === "admissions" && <AdmissionsTab actor={actor} />}
             {tab === "logo" && <LogoTab actor={actor} />}
             {tab === "security" && <SecurityTab />}
+            {tab === "menus" && <MenusTab actor={actor} />}
           </>
         )}
       </div>
@@ -1886,6 +1932,280 @@ function SecurityTab() {
         >
           Set PIN
         </button>
+      </div>
+    </div>
+  );
+}
+
+function MenusTab({ actor }: { actor: any }) {
+  const [groups, setGroups] = useState<NavGroup[]>(DEFAULT_NAV_GROUPS);
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+  const [newGroupLabel, setNewGroupLabel] = useState("");
+
+  useEffect(() => {
+    if (!actor) return;
+    actor
+      .getMenuConfig()
+      .then((result: string | null) => {
+        if (result) {
+          try {
+            setGroups(JSON.parse(result));
+          } catch {
+            setGroups(DEFAULT_NAV_GROUPS);
+          }
+        }
+      })
+      .catch(() => {});
+  }, [actor]);
+
+  const updateGroupLabel = (gi: number, label: string) => {
+    setGroups((prev) => prev.map((g, i) => (i === gi ? { ...g, label } : g)));
+  };
+
+  const deleteGroup = (gi: number) => {
+    setGroups((prev) => prev.filter((_, i) => i !== gi));
+  };
+
+  const addGroup = () => {
+    if (!newGroupLabel.trim()) return;
+    setGroups((prev) => [...prev, { label: newGroupLabel.trim(), items: [] }]);
+    setNewGroupLabel("");
+  };
+
+  const updateItem = (
+    gi: number,
+    ii: number,
+    field: "label" | "href",
+    val: string,
+  ) => {
+    setGroups((prev) =>
+      prev.map((g, i) =>
+        i === gi
+          ? {
+              ...g,
+              items: g.items.map((item, j) =>
+                j === ii ? { ...item, [field]: val } : item,
+              ),
+            }
+          : g,
+      ),
+    );
+  };
+
+  const deleteItem = (gi: number, ii: number) => {
+    setGroups((prev) =>
+      prev.map((g, i) =>
+        i === gi ? { ...g, items: g.items.filter((_, j) => j !== ii) } : g,
+      ),
+    );
+  };
+
+  const addItem = (gi: number) => {
+    setGroups((prev) =>
+      prev.map((g, i) =>
+        i === gi ? { ...g, items: [...g.items, { label: "", href: "" }] } : g,
+      ),
+    );
+  };
+
+  const moveItem = (gi: number, ii: number, dir: -1 | 1) => {
+    setGroups((prev) =>
+      prev.map((g, i) => {
+        if (i !== gi) return g;
+        const items = [...g.items];
+        const ni = ii + dir;
+        if (ni < 0 || ni >= items.length) return g;
+        [items[ii], items[ni]] = [items[ni], items[ii]];
+        return { ...g, items };
+      }),
+    );
+  };
+
+  const handleSave = async () => {
+    if (!actor) return;
+    setSaving(true);
+    setSaveMsg(null);
+    try {
+      await actor.setMenuConfig(JSON.stringify(groups));
+      setSaveMsg({ type: "success", text: "Menus saved successfully!" });
+    } catch {
+      setSaveMsg({
+        type: "error",
+        text: "Failed to save menus. Please try again.",
+      });
+    } finally {
+      setSaving(false);
+      setTimeout(() => setSaveMsg(null), 4000);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="font-serif text-xl font-bold text-gray-900">
+            Menu &amp; Submenu Editor
+          </h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Edit navigation groups and submenu items visible on the site.
+          </p>
+        </div>
+        <button
+          type="button"
+          data-ocid="menus.save_button"
+          onClick={handleSave}
+          disabled={saving}
+          className="px-5 py-2 bg-amber-600 text-white text-sm font-semibold rounded hover:bg-amber-700 transition-colors disabled:opacity-50"
+        >
+          {saving ? "Saving..." : "Save Menus"}
+        </button>
+      </div>
+
+      {saveMsg && (
+        <div
+          data-ocid={
+            saveMsg.type === "success"
+              ? "menus.success_state"
+              : "menus.error_state"
+          }
+          className={`px-4 py-3 rounded text-sm font-medium ${saveMsg.type === "success" ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}
+        >
+          {saveMsg.text}
+        </div>
+      )}
+
+      {groups.map((group, gi) => (
+        <div
+          key={group.label || gi}
+          className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
+        >
+          {/* Group header */}
+          <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 border-b border-amber-100">
+            <input
+              data-ocid={`menus.input.${gi + 1}`}
+              type="text"
+              value={group.label}
+              onChange={(e) => updateGroupLabel(gi, e.target.value)}
+              placeholder="Group label"
+              className="flex-1 border border-gray-300 rounded px-3 py-1.5 text-sm font-semibold focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+            />
+            <span className="text-xs text-gray-400">Menu Group</span>
+            <button
+              type="button"
+              data-ocid={`menus.delete_button.${gi + 1}`}
+              onClick={() => deleteGroup(gi)}
+              className="px-3 py-1.5 bg-red-100 text-red-700 text-xs font-medium rounded hover:bg-red-200 transition-colors"
+            >
+              Delete Group
+            </button>
+          </div>
+
+          {/* Items */}
+          <div className="divide-y divide-gray-100">
+            {group.items.map((item, ii) => (
+              <div
+                key={item.href || ii}
+                data-ocid={`menus.item.${gi + 1}`}
+                className="flex items-center gap-2 px-4 py-2.5"
+              >
+                <div className="flex flex-col gap-0.5">
+                  <button
+                    type="button"
+                    onClick={() => moveItem(gi, ii, -1)}
+                    disabled={ii === 0}
+                    className="text-gray-400 hover:text-gray-600 disabled:opacity-20 text-xs leading-none"
+                    title="Move up"
+                  >
+                    ▲
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => moveItem(gi, ii, 1)}
+                    disabled={ii === group.items.length - 1}
+                    className="text-gray-400 hover:text-gray-600 disabled:opacity-20 text-xs leading-none"
+                    title="Move down"
+                  >
+                    ▼
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={item.label}
+                  onChange={(e) => updateItem(gi, ii, "label", e.target.value)}
+                  placeholder="Item label"
+                  className="flex-1 border border-gray-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                />
+                <input
+                  type="text"
+                  value={item.href}
+                  onChange={(e) => updateItem(gi, ii, "href", e.target.value)}
+                  placeholder="/page-url"
+                  className="w-48 border border-gray-300 rounded px-2 py-1.5 text-sm font-mono focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                />
+                <button
+                  type="button"
+                  onClick={() => deleteItem(gi, ii)}
+                  className="px-2 py-1.5 text-red-500 hover:text-red-700 text-sm transition-colors"
+                  title="Delete item"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+            {group.items.length === 0 && (
+              <div
+                data-ocid="menus.empty_state"
+                className="px-4 py-3 text-sm text-gray-400 italic"
+              >
+                No submenu items yet.
+              </div>
+            )}
+          </div>
+
+          {/* Add item */}
+          <div className="px-4 py-2.5 bg-gray-50 border-t border-gray-100">
+            <button
+              type="button"
+              onClick={() => addItem(gi)}
+              className="text-sm text-amber-700 hover:text-amber-900 font-medium"
+            >
+              + Add Submenu Item
+            </button>
+          </div>
+        </div>
+      ))}
+
+      {/* Add new group */}
+      <div className="bg-white rounded-lg shadow-sm border border-dashed border-amber-300 p-4">
+        <h3 className="text-sm font-semibold text-gray-700 mb-3">
+          Add New Menu Group
+        </h3>
+        <div className="flex gap-3">
+          <input
+            data-ocid="menus.input"
+            type="text"
+            value={newGroupLabel}
+            onChange={(e) => setNewGroupLabel(e.target.value)}
+            placeholder="Group name (e.g. Resources)"
+            className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") addGroup();
+            }}
+          />
+          <button
+            type="button"
+            data-ocid="menus.primary_button"
+            onClick={addGroup}
+            disabled={!newGroupLabel.trim()}
+            className="px-4 py-2 bg-amber-600 text-white text-sm font-semibold rounded hover:bg-amber-700 transition-colors disabled:opacity-50"
+          >
+            Add Group
+          </button>
+        </div>
       </div>
     </div>
   );

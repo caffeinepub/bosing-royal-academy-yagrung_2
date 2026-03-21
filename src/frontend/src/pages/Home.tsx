@@ -375,7 +375,7 @@ export default function Home() {
                   className="aspect-square rounded overflow-hidden bg-gray-200"
                 >
                   <img
-                    src={item.blob.getDirectURL()}
+                    src={item.blob?.getDirectURL?.() ?? ""}
                     alt={item.title}
                     className="w-full h-full object-cover hover:scale-105 transition-transform"
                   />

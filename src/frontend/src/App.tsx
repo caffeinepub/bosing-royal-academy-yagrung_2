@@ -43,8 +43,16 @@ export function navigate(to: string) {
 }
 
 function getRoute(): string {
-  const hash = window.location.hash.replace("#", "") || "/";
-  return hash;
+  const raw = window.location.hash.replace("#", "") || "/";
+  // If the hash contains admin token params (not a real route), treat as home
+  if (raw.includes("caffeineAdminToken") && !raw.startsWith("/")) {
+    return "/";
+  }
+  // Ensure it starts with /
+  if (!raw.startsWith("/")) {
+    return "/";
+  }
+  return raw;
 }
 
 export default function App() {

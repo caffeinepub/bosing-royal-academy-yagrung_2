@@ -143,18 +143,30 @@ actor {
     };
   };
 
-  /*********** Storage **************/
-  var newsCounter = 0;
-  var eventsCounter = 0;
-  var staffCounter = 0;
-  var galleryCounter = 0;
-  var faqsCounter = 0;
-  var achievementsCounter = 0;
+  /*********** Stable Storage **************/
+  stable var newsCounter = 0;
+  stable var eventsCounter = 0;
+  stable var staffCounter = 0;
+  stable var galleryCounter = 0;
+  stable var faqsCounter = 0;
+  stable var achievementsCounter = 0;
 
-  var siteInfo : ?SiteInfo = null;
-  var admissionInfo : ?AdmissionInfo = null;
-  var logoBlob : ?Storage.ExternalBlob = null;
+  stable var siteInfo : ?SiteInfo = null;
+  stable var admissionInfo : ?AdmissionInfo = null;
+  stable var logoBlob : ?Storage.ExternalBlob = null;
+  stable var menuConfig : ?Text = null;
 
+  // Stable arrays to persist data across upgrades
+  stable var stableNews : [(Nat, Content)] = [];
+  stable var stableEvents : [(Nat, Event)] = [];
+  stable var stableStaff : [(Nat, Staff)] = [];
+  stable var stableGallery : [(Nat, GalleryImage)] = [];
+  stable var stableGalleryItems : [(Nat, GalleryItem)] = [];
+  stable var stableFaqs : [(Nat, FAQ)] = [];
+  stable var stableAchievements : [(Nat, Achievement)] = [];
+  stable var stableUserProfiles : [(Principal, UserProfile)] = [];
+
+  /*********** In-memory Maps **************/
   let news = Map.empty<Nat, Content>();
   let events = Map.empty<Nat, Event>();
   let staff = Map.empty<Nat, Staff>();
@@ -163,6 +175,39 @@ actor {
   let faqs = Map.empty<Nat, FAQ>();
   let achievements = Map.empty<Nat, Achievement>();
   let userProfiles = Map.empty<Principal, UserProfile>();
+
+  // Restore maps from stable arrays on canister start
+  for ((k, v) in stableNews.vals()) { news.add(k, v) };
+  for ((k, v) in stableEvents.vals()) { events.add(k, v) };
+  for ((k, v) in stableStaff.vals()) { staff.add(k, v) };
+  for ((k, v) in stableGallery.vals()) { gallery.add(k, v) };
+  for ((k, v) in stableGalleryItems.vals()) { galleryItems.add(k, v) };
+  for ((k, v) in stableFaqs.vals()) { faqs.add(k, v) };
+  for ((k, v) in stableAchievements.vals()) { achievements.add(k, v) };
+  for ((k, v) in stableUserProfiles.vals()) { userProfiles.add(k, v) };
+
+  /*********** Upgrade Hooks **************/
+  system func preupgrade() {
+    stableNews := news.entries().toArray();
+    stableEvents := events.entries().toArray();
+    stableStaff := staff.entries().toArray();
+    stableGallery := gallery.entries().toArray();
+    stableGalleryItems := galleryItems.entries().toArray();
+    stableFaqs := faqs.entries().toArray();
+    stableAchievements := achievements.entries().toArray();
+    stableUserProfiles := userProfiles.entries().toArray();
+  };
+
+  system func postupgrade() {
+    stableNews := [];
+    stableEvents := [];
+    stableStaff := [];
+    stableGallery := [];
+    stableGalleryItems := [];
+    stableFaqs := [];
+    stableAchievements := [];
+    stableUserProfiles := [];
+  };
 
   /*********** User Profile **************/
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
@@ -575,5 +620,17 @@ actor {
 
   public query ({ caller }) func getAllAchievements() : async [Achievement] {
     achievements.values().toArray();
+  };
+
+  /*********** Menu Config **************/
+  public shared ({ caller }) func setMenuConfig(json : Text) : async () {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Must be admin");
+    };
+    menuConfig := ?json;
+  };
+
+  public query func getMenuConfig() : async ?Text {
+    menuConfig;
   };
 };
