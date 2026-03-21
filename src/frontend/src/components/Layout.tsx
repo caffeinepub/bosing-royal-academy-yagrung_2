@@ -4,7 +4,10 @@ import { navigate } from "../App";
 import { useActor } from "../hooks/useActor";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 
-const DEFAULT_NAV_GROUPS = [
+type NavItem = { label: string; href: string };
+type NavGroup = { label: string; items: NavItem[] };
+
+const DEFAULT_NAV_GROUPS: NavGroup[] = [
   {
     label: "About",
     items: [
@@ -44,6 +47,24 @@ const DEFAULT_NAV_GROUPS = [
   },
 ];
 
+function isValidNavGroups(data: unknown): data is NavGroup[] {
+  if (!Array.isArray(data)) return false;
+  return data.every(
+    (g) =>
+      g &&
+      typeof g === "object" &&
+      typeof g.label === "string" &&
+      Array.isArray(g.items) &&
+      g.items.every(
+        (item: unknown) =>
+          item &&
+          typeof item === "object" &&
+          typeof (item as NavItem).label === "string" &&
+          typeof (item as NavItem).href === "string",
+      ),
+  );
+}
+
 export default function Layout({
   children,
   currentRoute,
@@ -53,28 +74,41 @@ export default function Layout({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [navGroups, setNavGroups] = useState(DEFAULT_NAV_GROUPS);
+  const [navGroups, setNavGroups] = useState<NavGroup[]>(DEFAULT_NAV_GROUPS);
   const isLoggedIn = !!identity;
 
   useEffect(() => {
     if (!actor) return;
-    actor.getLogoBlob().then((blob: any) => {
-      if (blob) setLogoUrl(blob?.getDirectURL?.() ?? null);
-    });
+    actor
+      .getLogoBlob()
+      .then((blob: any) => {
+        if (blob) setLogoUrl(blob?.getDirectURL?.() ?? null);
+      })
+      .catch(() => {});
     (actor as any)
       .getMenuConfig()
       .then((result: string | null) => {
-        if (result) {
+        if (result && typeof result === "string") {
           try {
-            const parsed = JSON.parse(result);
-            setNavGroups(parsed);
+            const parsed: unknown = JSON.parse(result);
+            if (isValidNavGroups(parsed) && parsed.length > 0) {
+              setNavGroups(parsed);
+            } else {
+              setNavGroups(DEFAULT_NAV_GROUPS);
+            }
           } catch {
             setNavGroups(DEFAULT_NAV_GROUPS);
           }
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        setNavGroups(DEFAULT_NAV_GROUPS);
+      });
   }, [actor]);
+
+  const safeNavGroups: NavGroup[] = Array.isArray(navGroups)
+    ? navGroups
+    : DEFAULT_NAV_GROUPS;
 
   const handleNav = (href: string) => {
     navigate(href);
@@ -164,9 +198,9 @@ export default function Layout({
             >
               Home
             </button>
-            {navGroups.map((group) => (
+            {safeNavGroups.map((group) => (
               <div
-                key={group.label}
+                key={group.label ?? "group"}
                 className="relative"
                 onMouseEnter={() => setOpenDropdown(group.label)}
                 onMouseLeave={() => setOpenDropdown(null)}
@@ -177,13 +211,13 @@ export default function Layout({
                 >
                   {group.label} <ChevronDown className="w-3 h-3" />
                 </button>
-                {openDropdown === group.label && (
+                {openDropdown === group.label && Array.isArray(group.items) && (
                   <div className="absolute top-full left-0 bg-white shadow-lg border border-gray-100 rounded py-1 min-w-48 z-50">
-                    {group.items.map((item) => (
+                    {group.items.map((item, idx) => (
                       <button
                         type="button"
-                        key={item.href}
-                        onClick={() => handleNav(item.href)}
+                        key={item.href ?? idx}
+                        onClick={() => handleNav(item.href ?? "/")}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-800 transition-colors"
                       >
                         {item.label}
@@ -228,13 +262,13 @@ export default function Layout({
             >
               Home
             </button>
-            {navGroups
-              .flatMap((g) => g.items)
-              .map((item) => (
+            {safeNavGroups
+              .flatMap((g) => (Array.isArray(g.items) ? g.items : []))
+              .map((item, idx) => (
                 <button
                   type="button"
-                  key={item.href}
-                  onClick={() => handleNav(item.href)}
+                  key={item.href ?? idx}
+                  onClick={() => handleNav(item.href ?? "/")}
                   className="block py-2 text-sm text-gray-700"
                 >
                   {item.label}
